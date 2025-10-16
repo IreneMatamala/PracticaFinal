@@ -1,29 +1,6 @@
-variable "location" {
-  description = "Azure region for resources"
-  type        = string
-  default     = "West Europe"
-}
-
-variable "environment" {
-  description = "Environment name"
-  type        = string
-  default     = "prod"
-}
-
-variable "kubernetes_version" {
-  description = "Kubernetes version"
-  type        = string
-  default     = "1.27"
-}
-
-variable "app_name" {
-  description = "Application name"
-  type        = string
-  default     = "techwave-app"
-}
-
-variable "app_version" {
-  description = "Application version"
-  type        = string
-  default     = "1.0.0"
-}
+variable "subscription_id" { type = string }
+variable "resource_group" { type = string, default = "rg-practicafinal" }
+variable "location" { type = string, default = "westeurope" }
+variable "aks_name" { type = string, default = "aks-practicafinal" }
+variable "node_count" { type = number, default = 2 }
+variable "node_size" { type = string, default = "Standard_DS2_v2" }
