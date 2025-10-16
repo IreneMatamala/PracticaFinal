@@ -8,4 +8,4 @@ location              = "westeurope"
 aks_cluster_name      = "aks-PracticaFinal"
 
 node_count            = 2
-node_size             = "Standard B2als v2
+node_size             = "Standard B2als v2"
