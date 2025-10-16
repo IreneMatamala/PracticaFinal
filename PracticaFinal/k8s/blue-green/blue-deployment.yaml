@@ -1,0 +1,29 @@
+cat > k8s/blue-green/blue-deployment.yaml << 'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: techwave-backend-blue
+  labels:
+    app: techwave-backend
+    version: blue
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: techwave-backend
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: techwave-backend
+        version: blue
+    spec:
+      containers:
+      - name: backend
+        image: acrpracticafinalprod.azurecr.io/techwave-backend:blue
+        ports:
+        - containerPort: 5000
+        env:
+        - name: DEPLOYMENT_COLOR
+          value: "blue"
+EOF
