@@ -1,0 +1,23 @@
+name: Blue-Green Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      color:
+        description: 'blue or green'
+        required: true
+        default: 'green'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to registry
+        run: |
+          echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ghcr.io -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+      - name: Switch ingress selector
+        run: |
+          # Simple script: patch ingress to point to desired svc (as example)
+          echo "Switching traffic to ${{ github.event.inputs.color }}"
+          # Aquí podrías usar kubectl patch para cambiar service selector o cambiar un service con selector version: green|blue
