@@ -1,0 +1,82 @@
+name: Deploy practica
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: acrpracticafinalprod.azurecr.io
+  CLUSTER_NAME: aks-practicafinal-prod
+  RESOURCE_GROUP: rg-practicafinal-prod
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Test Backend
+      run: |
+        cd src/backend
+        pip install -r requirements.txt
+        python -c "import flask; print('Flask import successful')"
+
+    - name: Build and push Docker images
+      run: |
+        echo ${{ secrets.ACR_PASSWORD }} | docker login $REGISTRY -u ${{ secrets.ACR_USERNAME }} --password-stdin
+        
+        # Build backend
+        docker build -t $REGISTRY/techwave-backend:${{ github.sha }} ./src/backend
+        docker push $REGISTRY/techwave-backend:${{ github.sha }}
+        
+        # Build frontend
+        docker build -t $REGISTRY/techwave-frontend:${{ github.sha }} ./src/frontend
+        docker push $REGISTRY/techwave-frontend:${{ github.sha }}
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Get AKS credentials
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: $RESOURCE_GROUP
+        cluster-name: $CLUSTER_NAME
+
+    - name: Deploy to AKS
+      run: |
+        # Update image tags in deployment
+        sed -i 's|techwave-backend:latest|techwave-backend:'${{ github.sha }}'|g' k8s/app/deployment.yaml
+        sed -i 's|techwave-frontend:latest|techwave-frontend:'${{ github.sha }}'|g' k8s/app/deployment.yaml
+        
+        # Apply Kubernetes manifests
+        kubectl apply -f k8s/app/
+        
+        # Wait for rollout
+        kubectl rollout status deployment/techwave-backend
+        kubectl rollout status deployment/techwave-frontend
+
+    - name: Run smoke tests
+      run: |
+        kubectl get pods,services
+        echo "Deployment completed successfully"
