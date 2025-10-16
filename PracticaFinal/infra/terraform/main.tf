@@ -1,5 +1,4 @@
 terraform {
-  required_version = ">= 1.3"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -22,3 +21,4 @@ resource "azurerm_resource_group" "main" {
   name     = "${var.aks_cluster_name}-rg"
   location = var.location
 }
+
