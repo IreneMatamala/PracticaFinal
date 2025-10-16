@@ -1,15 +1,12 @@
-version: '3.8'
+version: "3.8"
 services:
   backend:
     build: ../src/backend
-    ports: ["5000:5000"]
-    networks: [techwave-network]
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
   frontend:
-    build: ../src/frontend  
-    ports: ["8080:80"]
-    depends_on: [backend]
-    networks: [techwave-network]
-networks:
-  techwave-network:
-    driver: bridge
-
+    build: ../src/frontend
+    ports:
+      - "8080:8080"
