@@ -1,40 +1,25 @@
-resource "azurerm_kubernetes_cluster" "PracticaFinal" {
-  name                = "aks-practicafinal-${var.environment}"
-  location            = azurerm_resource_group.PracticaFinal.location
-  resource_group_name = azurerm_resource_group.PracticaFinal.name
-  dns_prefix          = "practicafinal-${var.environment}"
-  kubernetes_version  = var.kubernetes_version
+resource "azurerm_resource_group" "rg" {
+  name     = var.resource_group
+  location = var.location
+}
+
+resource "azurerm_kubernetes_cluster" "aks" {
+  name                = var.aks_name
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  dns_prefix          = var.aks_name
 
   default_node_pool {
-    name       = "default"
-    node_count = 3
-    vm_size    = "Standard_B2s"
+    name       = "agentpool"
+    node_count = var.node_count
+    vm_size    = var.node_size
   }
 
   identity {
     type = "SystemAssigned"
   }
 
-  network_profile {
-    network_plugin = "azure"
-    network_policy = "azure"
-  }
-
-  tags = {
-    Environment = var.environment
-    Project     = "PracticaFinal"
-  }
-}
-
-resource "azurerm_container_registry" "PracticaFinal" {
-  name                = "acrpracticafinal${var.environment}"
-  resource_group_name = azurerm_resource_group.PracticaFinal.name
-  location            = azurerm_resource_group.PracticaFinal.location
-  sku                 = "Basic"
-  admin_enabled       = true
-
-  tags = {
-    Environment = var.environment
-    Project     = "PracticaFinal"
+  lifecycle {
+    ignore_changes = [default_node_pool[0].node_count]
   }
 }
