@@ -8,3 +8,5 @@ output "kube_config" {
 
 
 
+
+
