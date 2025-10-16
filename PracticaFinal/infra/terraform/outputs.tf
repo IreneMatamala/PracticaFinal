@@ -1,8 +1,8 @@
 output "kube_config" {
-  description = "Kubeconfig for AKS cluster"
-  value       = azurerm_kubernetes_cluster.aks.kube_admin_config
-  sensitive   = true
+  value     = azurerm_kubernetes_cluster.aks.kube_admin_config_raw
+  sensitive = true
 }
+
 
 
 output "kube_config_raw" {
@@ -33,6 +33,7 @@ output "cluster_fqdn" {
   description = "Cluster FQDN"
   value       = azurerm_kubernetes_cluster.aks.fqdn
 }
+
 
 
 
