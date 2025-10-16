@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: techwave-backend-green
+  labels:
+    app: techwave-backend
+    version: green
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: techwave-backend
+      version: green
+  template:
+    metadata:
+      labels:
+        app: techwave-backend
+        version: green
+    spec:
+      containers:
+      - name: backend
+        image: acrpracticafinalprod.azurecr.io/techwave-backend:green
+        ports:
+        - containerPort: 5000
+        env:
+        - name: DEPLOYMENT_COLOR
+          value: "green"
