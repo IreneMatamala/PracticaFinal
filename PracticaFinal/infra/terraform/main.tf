@@ -19,7 +19,7 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "main" {
-  name     = "${var.aks_cluster_name}-rg"  # Usar aks_cluster_name en lugar de cluster_name
+  name     = "${var.aks_cluster_name}-rg" 
   location = var.location
 }
 
@@ -30,6 +30,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   dns_prefix          = var.aks_cluster_name  
  
 }
+
 
 
 
