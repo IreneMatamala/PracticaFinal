@@ -1,10 +1,6 @@
 global:
   scrape_interval: 15s
 scrape_configs:
-  - job_name: 'techwave-backend'
+  - job_name: 'kubernetes-nodes'
     kubernetes_sd_configs:
-    - role: endpoints
-    relabel_configs:
-    - source_labels: [__meta_kubernetes_service_label_app]
-      action: keep
-      regex: techwave-backend
+      - role: node
