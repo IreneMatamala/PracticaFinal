@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  backend:
+    build: ./src/backend
+    ports: ["5000:5000"]
+    networks: [techwave-network]
+  frontend:
+    build: ./src/frontend  
+    ports: ["80:80"]
+    depends_on: [backend]
+    networks: [techwave-network]
+networks:
+  techwave-network:
+    driver: bridge
