@@ -1,15 +1,12 @@
-apiVersion: v1
-kind: ConfigMap
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: web-config
-data:
-  DATABASE_URL: "postgres://user:pass@db:5432/mydb"
-  SECRET_KEY: "mi-secreto"
+  name: web-backend          # Nombre del Deployment
   labels:
     app: web
     tier: backend
 spec:
-  replicas: 2
+  replicas: 2                # Número de réplicas
   selector:
     matchLabels:
       app: web
@@ -24,20 +21,19 @@ spec:
         - name: backend
           image: myacrname.azurecr.io/backend:latest
           ports:
-            - containerPort: 5000
+            - containerPort: 5000  
           envFrom:
             - configMapRef:
-                name: web-config
-          readinessProbe:
+                name: web-config   
+          readinessProbe:          
             httpGet:
               path: /health
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
-          livenessProbe:
+          livenessProbe:           
             httpGet:
               path: /health
               port: 5000
             initialDelaySeconds: 15
             periodSeconds: 20
-
