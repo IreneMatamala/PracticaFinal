@@ -38,3 +38,23 @@ variable "azure_client_secret" {
 variable "azure_tenant_id" {
   type = string
 }
+
+variable "resource_group_name" {
+  type = string
+}
+
+variable "aks_cluster_name" {
+  type = string
+}
+
+variable "location" {
+  type = string
+}
+
+variable "node_count" {
+  type = number
+}
+
+variable "node_size" {
+  type = string
+}
