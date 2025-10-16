@@ -7,5 +7,5 @@ resource_group_name   = "rg-PracticaFinal"
 location              = "westeurope"
 aks_cluster_name      = "aks-PracticaFinal"
 
-node_count            = 2
-node_size             = "Standard_M48s_1_v3"
+node_size = "Standard_B2s"
+node_count = 1
