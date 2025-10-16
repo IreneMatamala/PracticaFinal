@@ -1,7 +1,10 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: web-backend
+  name: web-config
+data:
+  DATABASE_URL: "postgres://user:pass@db:5432/mydb"
+  SECRET_KEY: "mi-secreto"
   labels:
     app: web
     tier: backend
@@ -19,7 +22,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: [REPLACE_ME_REGISTRY]/backend:latest
+          image: myacrname.azurecr.io/backend:latest
           ports:
             - containerPort: 5000
           envFrom:
@@ -37,3 +40,4 @@ spec:
               port: 5000
             initialDelaySeconds: 15
             periodSeconds: 20
+
