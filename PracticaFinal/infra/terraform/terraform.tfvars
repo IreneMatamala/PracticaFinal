@@ -6,3 +6,6 @@ azure_tenant_id       = "AZURE_TENANT_ID"
 resource_group_name   = "rg-PracticaFinal"
 location              = "westeurope"
 aks_cluster_name      = "aks-PracticaFinal"
+
+node_count            = 2
+node_size             = "Standard B2als v2
