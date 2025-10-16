@@ -3,10 +3,6 @@ variable "resource_group" {
   default = "rg-practicafinal"
 }
 
-variable "location" {
-  type    = string
-  default = "westeurope"
-}
 
 variable "aks_name" {
   type    = string
@@ -50,5 +46,6 @@ variable "aks_cluster_name" {
 variable "location" {
   type = string
 }
+
 
 
