@@ -44,8 +44,10 @@ variable "aks_cluster_name" {
 }
 
 variable "location" {
-  default = "West US 3 (Zona 3)"
+  default = "westus3"
 }
+
+
 
 
 
