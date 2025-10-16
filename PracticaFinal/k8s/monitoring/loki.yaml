@@ -1,14 +1,33 @@
-apiVersion: helm.cattle.io/v1
-kind: HelmChart
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: loki-stack
+  name: loki
   namespace: monitoring
 spec:
-  chart: loki-stack
-  repo: https://grafana.github.io/helm-charts
-  targetNamespace: monitoring
-  set:
-    loki.persistence.enabled: true
-    loki.persistence.size: 10Gi
-    promtail.enabled: true
-    grafana.enabled: false
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+    spec:
+      containers:
+      - name: loki
+        image: grafana/loki:2.8.0
+        ports:
+        - containerPort: 3100
+        args: [ -config.file=/etc/loki/local-config.yaml ]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki-service
+  namespace: monitoring
+spec:
+  selector:
+    app: loki
+  ports:
+  - port: 3100
+    targetPort: 3100
