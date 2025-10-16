@@ -14,37 +14,35 @@ spec:
         app: otel-collector
     spec:
       containers:
-      - name: otel-collector
-        image: otel/opentelemetry-collector:0.88.0
-        ports:
-        - containerPort: 4317
-        - containerPort: 4318
-        - containerPort: 8889
-        command: ["--config=/etc/otel-collector-config.yaml"]
-        volumeMounts:
-        - name: otel-config
-          mountPath: /etc/otel-collector-config.yaml
-          subPath: otel-collector-config.yaml
+        - name: otel-collector
+          image: otel/opentelemetry-collector:0.73.0
+          args: ["--config=/conf/collector.yaml"]
+          volumeMounts:
+            - name: config
+              mountPath: /conf
       volumes:
-      - name: otel-config
-        configMap:
-          name: otel-config
+        - name: config
+          configMap:
+            name: otel-config
 ---
 apiVersion: v1
-kind: Service
+kind: ConfigMap
 metadata:
-  name: otel-collector-service
+  name: otel-config
   namespace: monitoring
-spec:
-  selector:
-    app: otel-collector
-  ports:
-  - name: otlp-grpc
-    port: 4317
-    targetPort: 4317
-  - name: otlp-http
-    port: 4318
-    targetPort: 4318
-  - name: metrics
-    port: 8889
-    targetPort: 8889
+data:
+  collector.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    exporters:
+      logging:
+      prometheus:
+        endpoint: "0.0.0.0:9090"
+    service:
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          exporters: [prometheus, logging]
