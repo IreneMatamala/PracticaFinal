@@ -1,7 +1,7 @@
-output "app_service_url" {
-  value = azurerm_app_service.PracticaFinal.default_site_hostname
+output "aks_cluster_name" {
+  value = azurerm_kubernetes_cluster.aks.name
 }
-
-output "resource_group_name" {
-  value = azurerm_resource_group.PracticaFinal.name
+output "kube_config" {
+  value = azurerm_kubernetes_cluster.aks.kube_config.0.raw_kube_config
+  sensitive = true
 }
