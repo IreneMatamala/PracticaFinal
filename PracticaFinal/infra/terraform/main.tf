@@ -18,6 +18,11 @@ provider "azurerm" {
   tenant_id       = var.azure_tenant_id
 }
 
+resource "azurerm_resource_group" "main" {
+  name     = "${var.cluster_name}-rg"
+  location = var.location
+}
+
 
 
 
