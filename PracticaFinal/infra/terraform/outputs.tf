@@ -19,7 +19,7 @@ output "resource_group_name" {
 
 output "configure_kubectl" {
   description = "Command to configure kubectl"
-  value       = "az aks get-credentials --resource-group ${azurerm_resource_group.main.name} --name ${azurerm_kubernetes_cluster.aks.name} --overwrite-existing"
+  value       = "az aks get-credentials --resource-group ${azurerm_resource_group.main.name} --name ${var.aks_cluster_name} --overwrite-existing"
 }
 
 
@@ -27,3 +27,4 @@ output "cluster_fqdn" {
   description = "Cluster FQDN"
   value       = azurerm_kubernetes_cluster.aks.fqdn
 }
+
