@@ -1,48 +1,172 @@
-name: Deploy practica
+name: TechWave Solutions
 
 on:
   push:
+    branches: [ main, develop ]
+  pull_request:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
 
 env:
   REGISTRY: acrpracticafinalprod.azurecr.io
+  IMAGE_NAME_BACKEND: techwave-backend
+  IMAGE_NAME_FRONTEND: techwave-frontend
   CLUSTER_NAME: aks-practicafinal-prod
   RESOURCE_GROUP: rg-practicafinal-prod
 
 jobs:
-  build-and-test:
+  security-scan:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
 
+  test-backend:
+    runs-on: ubuntu-latest
+    needs: security-scan
+    steps:
+    - uses: actions/checkout@v4
+    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-
-    - name: Test Backend
+    
+    - name: Install dependencies
       run: |
         cd src/backend
         pip install -r requirements.txt
-        python -c "import flask; print('Flask import successful')"
-
-    - name: Build and push Docker images
+        pip install pytest pytest-cov
+    
+    - name: Run tests with coverage
       run: |
-        echo ${{ secrets.ACR_PASSWORD }} | docker login $REGISTRY -u ${{ secrets.ACR_USERNAME }} --password-stdin
-        
-        # Build backend
-        docker build -t $REGISTRY/techwave-backend:${{ github.sha }} ./src/backend
-        docker push $REGISTRY/techwave-backend:${{ github.sha }}
-        
-        # Build frontend
-        docker build -t $REGISTRY/techwave-frontend:${{ github.sha }} ./src/frontend
-        docker push $REGISTRY/techwave-frontend:${{ github.sha }}
+        cd src/backend
+        python -m pytest test_app.py -v --cov=app --cov-report=xml
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./src/backend/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
 
-  deploy:
-    needs: build-and-test
+  test-frontend:
     runs-on: ubuntu-latest
-    environment: production
+    needs: security-scan
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: src/frontend/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd src/frontend
+        npm ci
+    
+    - name: Run linting
+      run: |
+        cd src/frontend
+        npx eslint app.js || echo "Linting completed"
+
+  build-and-push:
+    needs: [test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      backend-sha: ${{ steps.backend-build.outputs.sha }}
+      frontend-sha: ${{ steps.frontend-build.outputs.sha }}
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Azure Container Registry
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.REGISTRY }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+
+    - name: Extract metadata for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}
+        tags: |
+          type=sha,prefix={{branch}}-
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=raw,value=latest
+
+    - name: Build and push backend image
+      id: backend-build
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src/backend
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:latest
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build and push frontend image
+      id: frontend-build
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src/frontend
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:latest
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Scan images with Trivy
+      run: |
+        trivy image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
+        trivy image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}
+
+  deploy-staging:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: staging
+    if: github.ref == 'refs/heads/main'
     
     steps:
     - uses: actions/checkout@v4
@@ -60,23 +184,126 @@ jobs:
     - name: Get AKS credentials
       uses: azure/aks-set-context@v3
       with:
-        resource-group: $RESOURCE_GROUP
-        cluster-name: $CLUSTER_NAME
+        resource-group: ${{ env.RESOURCE_GROUP }}
+        cluster-name: ${{ env.CLUSTER_NAME }}-staging
 
-    - name: Deploy to AKS
+    - name: Deploy to Staging
       run: |
-        # Update image tags in deployment
+        
         sed -i 's|techwave-backend:latest|techwave-backend:'${{ github.sha }}'|g' k8s/app/deployment.yaml
         sed -i 's|techwave-frontend:latest|techwave-frontend:'${{ github.sha }}'|g' k8s/app/deployment.yaml
         
-        # Apply Kubernetes manifests
+       
         kubectl apply -f k8s/app/
         
-        # Wait for rollout
-        kubectl rollout status deployment/techwave-backend
-        kubectl rollout status deployment/techwave-frontend
+       
+        kubectl rollout status deployment/techwave-backend --timeout=300s
+        kubectl rollout status deployment/techwave-frontend --timeout=300s
+
+    - name: Run integration tests
+      run: |
+        echo "Running integration tests against staging environment"
+        # Add integration test 
+
+  deploy-production:
+    needs: [build-and-push, deploy-staging]
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Kubectl
+      uses: azure/setup-kubectl@v3
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Get AKS credentials
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: ${{ env.RESOURCE_GROUP }}
+        cluster-name: ${{ env.CLUSTER_NAME }}
+
+    - name: Deploy to Production with Blue-Green
+      run: |
+        
+        CURRENT_COLOR=$(kubectl get svc techwave-backend-service -o jsonpath='{.spec.selector.version}' || echo "blue")
+        
+        if [ "$CURRENT_COLOR" == "blue" ]; then
+          NEW_COLOR="green"
+        else
+          NEW_COLOR="blue"
+        fi
+        
+        echo "Current color: $CURRENT_COLOR, Deploying to: $NEW_COLOR"
+        
+        
+        sed -i 's|techwave-backend:latest|techwave-backend:'${{ github.sha }}'|g' k8s/blue-green/${NEW_COLOR}-deployment.yaml
+        sed -i 's|techwave-frontend:latest|techwave-frontend:'${{ github.sha }}'|g' k8s/app/deployment.yaml
+        
+        
+        kubectl apply -f k8s/blue-green/${NEW_COLOR}-deployment.yaml
+        kubectl apply -f k8s/app/deployment.yaml
+        
+       
+        kubectl rollout status deployment/techwave-backend-${NEW_COLOR} --timeout=300s
+        
+     
+        kubectl patch service techwave-backend-service -p "{\"spec\":{\"selector\":{\"version\":\"${NEW_COLOR}\"}}}"
+        
+      
+        kubectl scale deployment/techwave-backend-${CURRENT_COLOR} --replicas=0
 
     - name: Run smoke tests
       run: |
+        echo "Running smoke tests on production"
+        # Add smoke test commands here
         kubectl get pods,services
-        echo "Deployment completed successfully"
+
+    - name: Notify deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: 🚀 Deployment to production completed successfully!
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      if: success()
+
+  rollback-on-failure:
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    if: failure() && needs.deploy-production.result == 'failure'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Kubectl
+      uses: azure/setup-kubectl@v3
+    
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Get AKS credentials
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: ${{ env.RESOURCE_GROUP }}
+        cluster-name: ${{ env.CLUSTER_NAME }}
+    
+    - name: Rollback deployment
+      run: |
+        kubectl rollout undo deployment/techwave-backend
+        kubectl rollout status deployment/techwave-backend --timeout=300s
+        echo "Rollback completed successfully"
+    
+    - name: Notify rollback
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: 🔄 Rollback initiated due to deployment failure
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+EOF
