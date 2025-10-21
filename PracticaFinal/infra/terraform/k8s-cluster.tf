@@ -1,5 +1,5 @@
 resource "azurerm_resource_group" "rg" {
-  name     = "techwave-rg"
+  name     = "techwave-rg-nuevo"
   location = "francecentral"
 }
 
@@ -54,3 +54,4 @@ output "aks_cluster_kubeconfig" {
   value     = azurerm_kubernetes_cluster.aks_cluster.kube_config_raw
   sensitive = true
 }
+
