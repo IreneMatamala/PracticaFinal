@@ -1,10 +1,10 @@
-output "aks_name" {
-  value = azurerm_kubernetes_cluster.aks_cluster.name
-}
-
 output "kubeconfig" {
   value     = azurerm_kubernetes_cluster.aks_cluster.kube_config_raw
   sensitive = true
+}
+
+output "aks_name" {
+  value = azurerm_kubernetes_cluster.aks_cluster.name
 }
 
 output "resource_group_name" {
