@@ -5,11 +5,20 @@ provider "azurerm" {
     }
   }
 }
+provider "azurerm" {
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
+}
+
 
 resource "azurerm_resource_group" "rg" {
   name     = "techwave-rg"
   location = "westeurope"
 }
+
 
 resource "azurerm_virtual_network" "vnet" {
   name                = "techwave-vnet"
@@ -18,12 +27,23 @@ resource "azurerm_virtual_network" "vnet" {
   resource_group_name = azurerm_resource_group.rg.name
 }
 
+
 resource "azurerm_subnet" "subnet" {
   name                 = "techwave-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
 }
+
+
+resource "azurerm_container_registry" "acr" {
+  name                     = "techwaveacr123"
+  resource_group_name      = azurerm_resource_group.rg.name
+  location                 = azurerm_resource_group.rg.location
+  sku                      = "Basic"
+  admin_enabled            = true
+}
+
 
 resource "azurerm_kubernetes_cluster" "aks_cluster" {
   name                = "techwave-aks"
@@ -32,9 +52,9 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
   dns_prefix          = "techwaveaks"
 
   default_node_pool {
-    name           = "default"
-    node_count     = 1
-    vm_size        = "Standard_DS2_v2"
+    name       = "default"
+    node_count = 2
+    vm_size    = "Standard_DS2_v2"
     vnet_subnet_id = azurerm_subnet.subnet.id
   }
 
@@ -43,30 +63,19 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
   }
 
   network_profile {
-    network_plugin   = "azure"
+    network_plugin    = "azure"
     load_balancer_sku = "standard"
+    outbound_type     = "loadBalancer"
   }
 
-  azure_active_directory_role_based_access_control {
-    managed = true
-  }
-
-  tags = {
-    Environment = "Terraform"
-  }
+  depends_on = [
+    azurerm_subnet.subnet
+  ]
 }
 
-resource "azurerm_container_registry" "acr" {
-  name                = "techwaveacr123"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
-  sku                 = "Basic"
-  admin_enabled       = true
-}
 
 resource "azurerm_role_assignment" "aks_acr" {
-  principal_id        = azurerm_kubernetes_cluster.aks_cluster.kubelet_identity[0].object_id
+  scope                = azurerm_container_registry.acr.id
   role_definition_name = "AcrPull"
-  scope               = azurerm_container_registry.acr.id
+  principal_id         = azurerm_kubernetes_cluster.aks_cluster.kubelet_identity[0].object_id
 }
-
