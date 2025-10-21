@@ -35,5 +35,29 @@ variable "subnet_name" {
 }
 
 
+variable "subscription_id" {
+  type        = string
+  description = "ID de la suscripción de Azure"
+  sensitive   = true
+}
+
+variable "tenant_id" {
+  type        = string
+  description = "Tenant ID de Azure"
+  sensitive   = true
+}
+
+variable "client_id" {
+  type        = string
+  description = "Client ID del Service Principal"
+  sensitive   = true
+}
+
+variable "client_secret" {
+  type        = string
+  description = "Client Secret del Service Principal"
+  sensitive   = true
+}
+
 
 
