@@ -3,8 +3,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   location            = var.location
   resource_group_name = var.resource_group_name
   dns_prefix          = "techwave"
-
-  kubernetes_version = "1.27.3" 
+  kubernetes_version  = "1.27.3"
 
   default_node_pool {
     name       = "default"
@@ -16,9 +15,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
     type = "SystemAssigned"
   }
 
+  role_based_access_control_enabled = true
 
-   role_based_access_control_enabled = true
-
-  
+  network_profile {
+    network_plugin    = "azure"
+    load_balancer_sku = "standard"
+  }
 }
-
