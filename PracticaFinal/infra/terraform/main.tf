@@ -18,7 +18,3 @@ provider "azurerm" {
 }
 
 
-resource "azurerm_resource_group" "rg" {
-  name     = "techwave-rg"
-  location = "westeurope"
-}
