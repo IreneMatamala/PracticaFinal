@@ -15,13 +15,13 @@ provider "azurerm" {
   features {}
 }
 
-# Recurso principal: grupo de recursos
+
 resource "azurerm_resource_group" "main" {
   name     = var.resource_group_name
   location = var.location
 }
 
-# Red virtual y subred
+
 resource "azurerm_virtual_network" "main" {
   name                = "techwave-vnet"
   address_space       = ["10.0.0.0/16"]
@@ -36,7 +36,7 @@ resource "azurerm_subnet" "main" {
   address_prefixes     = ["10.0.1.0/24"]
 }
 
-# Registro de contenedores
+
 resource "azurerm_container_registry" "acr" {
   name                = var.acr_name
   resource_group_name = azurerm_resource_group.main.name
@@ -47,16 +47,12 @@ resource "azurerm_container_registry" "acr" {
 
 
 
-
-# Permitir al AKS usar el ACR
 resource "azurerm_role_assignment" "aks_acr" {
   principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
   role_definition_name = "AcrPull"
   scope                = azurerm_container_registry.acr.id
 }
 
-output "kubeconfig" {
-  value     = azurerm_kubernetes_cluster.aks.kube_config_raw
-  sensitive = true
-}
+
+
 
