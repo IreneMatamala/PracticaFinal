@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: myacrname.azurecr.io/backend:latest
+          image: techwaveacr123.azurecr.io/backend:latest
           ports:
             - containerPort: 5000  
           envFrom:
@@ -37,4 +37,5 @@ spec:
               port: 5000
             initialDelaySeconds: 15
             periodSeconds: 20
+
 
