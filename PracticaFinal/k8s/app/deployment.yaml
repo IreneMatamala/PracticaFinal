@@ -1,12 +1,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: web-backend          # Nombre del Deployment
+  name: web-backend          
   labels:
     app: web
     tier: backend
 spec:
-  replicas: 2                # Número de réplicas
+  replicas: 2                
   selector:
     matchLabels:
       app: web
@@ -37,3 +37,4 @@ spec:
               port: 5000
             initialDelaySeconds: 15
             periodSeconds: 20
+
