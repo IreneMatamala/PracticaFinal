@@ -4,7 +4,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   resource_group_name = var.resource_group_name
   dns_prefix          = "techwave"
 
-  kubernetes_version = "1.27.3"  # ejemplo de versión estable y soportada
+  kubernetes_version = "1.27.3" 
 
   default_node_pool {
     name       = "default"
@@ -16,7 +16,9 @@ resource "azurerm_kubernetes_cluster" "aks" {
     type = "SystemAssigned"
   }
 
-  role_based_access_control {
-    enabled = true
-  }
+
+   role_based_access_control_enabled = true
+
+  
 }
+
