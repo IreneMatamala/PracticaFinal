@@ -1,63 +1,37 @@
+variable "subscription_id" {}
+variable "tenant_id" {}
+variable "client_id" {}
+variable "client_secret" {}
+
 variable "resource_group_name" {
-  type        = string
-  description = "Name of the Azure Resource Group"
-  default     = "techwave-rg"
+  default = "techwave-rg"
 }
 
 variable "location" {
-  type        = string
-  description = "Azure region"
-  default     = "westeurope"
-}
-
-variable "acr_name" {
-  type        = string
-  description = "Name of the Azure Container Registry"
-  default     = "techwaveacr123"
+  default = "westeurope"
 }
 
 variable "aks_name" {
-  type        = string
-  description = "Name of the AKS cluster"
-  default     = "techwave-aks"
+  default = "techwave-aks"
+}
+
+variable "acr_name" {
+  default = "techwaveacr123"
 }
 
 variable "vnet_name" {
-  type        = string
-  description = "Name of the Virtual Network"
-  default     = "techwave-vnet"
+  default = "techwave-vnet"
 }
 
 variable "subnet_name" {
-  type        = string
-  description = "Name of the Subnet"
-  default     = "techwave-subnet"
+  default = "techwave-subnet"
 }
 
-
-variable "subscription_id" {
-  type        = string
-  description = "ID de la suscripción de Azure"
-  sensitive   = true
+variable "node_count" {
+  default = 2
 }
 
-variable "tenant_id" {
-  type        = string
-  description = "Tenant ID de Azure"
-  sensitive   = true
+variable "node_vm_size" {
+  default = "Standard_DS2_v2"
 }
-
-variable "client_id" {
-  type        = string
-  description = "Client ID del Service Principal"
-  sensitive   = true
-}
-
-variable "client_secret" {
-  type        = string
-  description = "Client Secret del Service Principal"
-  sensitive   = true
-}
-
-
 
