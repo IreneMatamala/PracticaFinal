@@ -1,42 +1,38 @@
-variable "cluster_name" {
-  description = "Name of the AKS cluster"
-  type        = string
-  default     = "techwave-aks"
-}
-
-variable "location" {
-  description = "Azure location for the cluster"
-  type        = string
-  default     = "francecentral"
-}
-
 variable "resource_group_name" {
-  description = "Azure Resource Group name"
   type        = string
+  description = "Name of the Azure Resource Group"
   default     = "techwave-rg"
 }
 
-variable "node_count" {
-  description = "Number of nodes in default node pool"
-  type        = number
-  default     = 1
-}
-
-variable "node_size" {
-  description = "Size of the AKS VM nodes"
+variable "location" {
   type        = string
-  default     = "Standard_B2s"
-}
-
-variable "environment_name" {
-  description = "Environment name tag"
-  type        = string
-  default     = "dev"
+  description = "Azure region"
+  default     = "francecentral"
 }
 
 variable "acr_name" {
-  description = "Nombre del Azure Container Registry"
   type        = string
+  description = "Name of the Azure Container Registry"
   default     = "techwaveacr123"
 }
+
+variable "aks_name" {
+  type        = string
+  description = "Name of the AKS cluster"
+  default     = "techwave-aks"
+}
+
+variable "vnet_name" {
+  type        = string
+  description = "Name of the Virtual Network"
+  default     = "techwave-vnet"
+}
+
+variable "subnet_name" {
+  type        = string
+  description = "Name of the Subnet"
+  default     = "techwave-subnet"
+}
+
+
 
