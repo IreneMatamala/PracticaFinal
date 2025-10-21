@@ -20,8 +20,14 @@ variable "node_count" {
 
 variable "acr_name" {
   description = "Nombre del Azure Container Registry"
-  default     = "techwaveacr123" # ⚠️ debe ser único globalmente, cambia el número si da error
+  default     = "techwaveacr123" 
 }
+
+variable "node_size" {
+  type    = string
+  default = "Standard_B2s"
+}
+
 
 
 
