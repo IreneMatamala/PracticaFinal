@@ -45,27 +45,8 @@ resource "azurerm_container_registry" "acr" {
   admin_enabled       = true
 }
 
-# Clúster de Kubernetes (AKS)
-resource "azurerm_kubernetes_cluster" "aks" {
-  name                = var.cluster_name
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  dns_prefix          = "techwave"
 
-  default_node_pool {
-    name       = "default"
-    node_count = var.node_count
-    vm_size    = "Standard_B2s"
-  }
 
-  identity {
-    type = "SystemAssigned"
-  }
-
-  network_profile {
-    network_plugin = "azure"
-  }
-}
 
 # Permitir al AKS usar el ACR
 resource "azurerm_role_assignment" "aks_acr" {
@@ -78,3 +59,4 @@ output "kubeconfig" {
   value     = azurerm_kubernetes_cluster.aks.kube_config_raw
   sensitive = true
 }
+
