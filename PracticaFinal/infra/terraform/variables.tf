@@ -1,50 +1,26 @@
-variable "resource_group" {
-  type    = string
-  default = "rg-practicafinal"
-}
-
-
-variable "aks_name" {
-  type    = string
-  default = "aks-practicafinal"
-}
-
-variable "node_count" {
-  type    = number
-  default = 2
-}
-
-variable "node_size" {
-  type    = string
-  default = "Standard_DS2_v2"
-}
-
-variable "azure_subscription_id" {
-  type = string
-}
-
-variable "azure_client_id" {
-  type = string
-}
-
-variable "azure_client_secret" {
-  type = string
-}
-
-variable "azure_tenant_id" {
-  type = string
-}
-
 variable "resource_group_name" {
-  type = string
-}
-
-variable "aks_cluster_name" {
-  type = string
+  description = "Nombre del grupo de recursos"
+  default     = "techwave-rg"
 }
 
 variable "location" {
-  default = "westus3"
+  description = "Ubicación del recurso"
+  default     = "France Central"
+}
+
+variable "cluster_name" {
+  description = "Nombre del clúster AKS"
+  default     = "techwave-aks"
+}
+
+variable "node_count" {
+  description = "Número de nodos en el clúster"
+  default     = 1
+}
+
+variable "acr_name" {
+  description = "Nombre del Azure Container Registry"
+  default     = "techwaveacr123" # ⚠️ debe ser único globalmente, cambia el número si da error
 }
 
 
