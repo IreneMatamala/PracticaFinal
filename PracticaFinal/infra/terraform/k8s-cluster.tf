@@ -1,45 +1,41 @@
+provider "azurerm" {
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
+}
+
 resource "azurerm_resource_group" "rg" {
-  name     = var.resource_group_name
-  location = var.location
+  name     = "techwave-rg"
+  location = "westeurope"
 }
 
 resource "azurerm_virtual_network" "vnet" {
-  name                = var.vnet_name
+  name                = "techwave-vnet"
   address_space       = ["10.0.0.0/16"]
-  location            = var.location
+  location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
 
 resource "azurerm_subnet" "subnet" {
-  name                 = var.subnet_name
+  name                 = "techwave-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
 }
 
-resource "azurerm_container_registry" "acr" {
-  name                     = var.acr_name
-  resource_group_name      = azurerm_resource_group.rg.name
-  location                 = var.location
-  sku                      = "Basic"
-  admin_enabled            = true
-  public_network_access_enabled = true
-  export_policy_enabled    = true
-}
-
 resource "azurerm_kubernetes_cluster" "aks_cluster" {
-  name                = var.aks_name
-  location            = var.location
+  name                = "techwave-aks"
+  location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-  dns_prefix          = "techwave"
+  dns_prefix          = "techwaveaks"
 
   default_node_pool {
     name       = "default"
     node_count = 1
-    vm_size    = "Standard_B2s"
-    os_disk_type = "Managed"
-    os_disk_size_gb = 30
-    type       = "VirtualMachineScaleSets"
+    vm_size    = "Standard_DS2_v2"
+    vnet_subnet_id = azurerm_subnet.subnet.id
   }
 
   identity {
@@ -47,20 +43,48 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
   }
 
   network_profile {
-    network_plugin     = "azure"
-    load_balancer_sku  = "standard"
-    outbound_type      = "loadBalancer"
+    network_plugin = "azure"
+    load_balancer_sku = "standard"
   }
 
-  role_based_access_control_enabled = true
+  # Habilitar RBAC moderno
+  azure_active_directory_role_based_access_control {
+    managed = true
+  }
 
+  tags = {
+    Environment = "Terraform"
+  }
+}
 
-  depends_on = [azurerm_subnet.subnet]
+resource "azurerm_container_registry" "acr" {
+  name                     = "techwaveacr123"
+  resource_group_name      = azurerm_resource_group.rg.name
+  location                 = azurerm_resource_group.rg.location
+  sku                      = "Basic"
+  admin_enabled            = true
 }
 
 resource "azurerm_role_assignment" "aks_acr" {
-  principal_id         = azurerm_kubernetes_cluster.aks_cluster.kubelet_identity[0].object_id
+  principal_id   = azurerm_kubernetes_cluster.aks_cluster.kubelet_identity[0].object_id
   role_definition_name = "AcrPull"
-  scope                = azurerm_container_registry.acr.id
+  scope          = azurerm_container_registry.acr.id
+}
+
+output "kubeconfig" {
+  value     = azurerm_kubernetes_cluster.aks_cluster.kube_config_raw
+  sensitive = true
+}
+
+output "aks_name" {
+  value = azurerm_kubernetes_cluster.aks_cluster.name
+}
+
+output "resource_group_name" {
+  value = azurerm_resource_group.rg.name
+}
+
+output "acr_login_server" {
+  value = azurerm_container_registry.acr.login_server
 }
 
