@@ -52,9 +52,8 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
     outbound_type      = "loadBalancer"
   }
 
-  role_based_access_control {
-    enabled = true
-  }
+  role_based_access_control_enabled = true
+
 
   depends_on = [azurerm_subnet.subnet]
 }
@@ -64,3 +63,4 @@ resource "azurerm_role_assignment" "aks_acr" {
   role_definition_name = "AcrPull"
   scope                = azurerm_container_registry.acr.id
 }
+
