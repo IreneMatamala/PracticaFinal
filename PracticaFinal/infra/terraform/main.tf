@@ -1,17 +1,4 @@
 
-provider "azurerm" {
-  features {
-    resource_group {
-      prevent_deletion_if_contains_resources = false
-    }
-  }
-
-  subscription_id = var.subscription_id
-  tenant_id       = var.tenant_id
-  client_id       = var.client_id
-  client_secret   = var.client_secret
-}
-
 resource "azurerm_resource_group" "rg" {
   name     = var.resource_group_name
   location = var.location
@@ -70,3 +57,4 @@ resource "azurerm_role_assignment" "aks_acr" {
   role_definition_name = "AcrPull"
   principal_id         = azurerm_kubernetes_cluster.aks_cluster.kubelet_identity[0].object_id
 }
+
