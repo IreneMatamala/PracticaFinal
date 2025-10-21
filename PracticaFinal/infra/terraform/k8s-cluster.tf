@@ -1,11 +1,3 @@
-provider "azurerm" {
-  features {
-    resource_group {
-      prevent_deletion_if_contains_resources = false
-    }
-  }
-}
-
 resource "azurerm_resource_group" "rg" {
   name     = "techwave-rg"
   location = "westeurope"
@@ -32,9 +24,9 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
   dns_prefix          = "techwaveaks"
 
   default_node_pool {
-    name       = "default"
-    node_count = 1
-    vm_size    = "Standard_DS2_v2"
+    name           = "default"
+    node_count     = 1
+    vm_size        = "Standard_DS2_v2"
     vnet_subnet_id = azurerm_subnet.subnet.id
   }
 
@@ -43,11 +35,10 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
   }
 
   network_profile {
-    network_plugin = "azure"
+    network_plugin   = "azure"
     load_balancer_sku = "standard"
   }
 
-  # Habilitar RBAC moderno
   azure_active_directory_role_based_access_control {
     managed = true
   }
@@ -58,33 +49,15 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
 }
 
 resource "azurerm_container_registry" "acr" {
-  name                     = "techwaveacr123"
-  resource_group_name      = azurerm_resource_group.rg.name
-  location                 = azurerm_resource_group.rg.location
-  sku                      = "Basic"
-  admin_enabled            = true
+  name                = "techwaveacr123"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  sku                 = "Basic"
+  admin_enabled       = true
 }
 
 resource "azurerm_role_assignment" "aks_acr" {
-  principal_id   = azurerm_kubernetes_cluster.aks_cluster.kubelet_identity[0].object_id
+  principal_id        = azurerm_kubernetes_cluster.aks_cluster.kubelet_identity[0].object_id
   role_definition_name = "AcrPull"
-  scope          = azurerm_container_registry.acr.id
+  scope               = azurerm_container_registry.acr.id
 }
-
-output "kubeconfig" {
-  value     = azurerm_kubernetes_cluster.aks_cluster.kube_config_raw
-  sensitive = true
-}
-
-output "aks_name" {
-  value = azurerm_kubernetes_cluster.aks_cluster.name
-}
-
-output "resource_group_name" {
-  value = azurerm_resource_group.rg.name
-}
-
-output "acr_login_server" {
-  value = azurerm_container_registry.acr.login_server
-}
-
