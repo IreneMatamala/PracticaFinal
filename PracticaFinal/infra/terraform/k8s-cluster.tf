@@ -1,16 +1,13 @@
-resource "azurerm_resource_group" "rg" {
-  name     = var.resource_group
-  location = var.location
-}
-
 resource "azurerm_kubernetes_cluster" "aks" {
-  name                = var.aks_name
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-  dns_prefix          = var.aks_name
+  name                = var.cluster_name
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  dns_prefix          = "techwave"
+
+  kubernetes_version = "1.27.3"  # ejemplo de versión estable y soportada
 
   default_node_pool {
-    name       = "agentpool"
+    name       = "default"
     node_count = var.node_count
     vm_size    = var.node_size
   }
@@ -19,7 +16,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
     type = "SystemAssigned"
   }
 
-  lifecycle {
-    ignore_changes = [default_node_pool[0].node_count]
+  role_based_access_control {
+    enabled = true
   }
 }
