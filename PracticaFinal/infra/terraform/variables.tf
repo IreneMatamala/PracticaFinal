@@ -7,7 +7,7 @@ variable "resource_group_name" {
 variable "location" {
   type        = string
   description = "Azure region"
-  default     = "francecentral"
+  default     = "westeurope"
 }
 
 variable "acr_name" {
@@ -33,6 +33,7 @@ variable "subnet_name" {
   description = "Name of the Subnet"
   default     = "techwave-subnet"
 }
+
 
 
 
