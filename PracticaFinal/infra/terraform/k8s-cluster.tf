@@ -1,7 +1,3 @@
-provider "azurerm" {
-  features {}
-}
-
 resource "azurerm_resource_group" "rg" {
   name     = "techwave-rg"
   location = "francecentral"
@@ -41,5 +37,20 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
   }
 
   network_profile {
+    network_plugin    = "azure"
+    load_balancer_sku = "standard"
+  }
+}
 
+output "aks_cluster_name" {
+  value = azurerm_kubernetes_cluster.aks_cluster.name
+}
 
+output "aks_cluster_resource_group" {
+  value = azurerm_resource_group.rg.name
+}
+
+output "aks_cluster_kubeconfig" {
+  value     = azurerm_kubernetes_cluster.aks_cluster.kube_config_raw
+  sensitive = true
+}
