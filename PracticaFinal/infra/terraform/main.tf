@@ -2,23 +2,79 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">=3.0"
+      version = "~> 3.100.0"
     }
   }
+
+  required_version = ">= 1.5.0"
+
   backend "local" {}
 }
 
 provider "azurerm" {
   features {}
-
-  subscription_id = var.azure_subscription_id
-  client_id       = var.azure_client_id
-  client_secret   = var.azure_client_secret
-  tenant_id       = var.azure_tenant_id
 }
 
+# Recurso principal: grupo de recursos
 resource "azurerm_resource_group" "main" {
-  name     = "${var.aks_cluster_name}-rg"
+  name     = var.resource_group_name
   location = var.location
 }
 
+# Red virtual y subred
+resource "azurerm_virtual_network" "main" {
+  name                = "techwave-vnet"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+}
+
+resource "azurerm_subnet" "main" {
+  name                 = "techwave-subnet"
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+# Registro de contenedores
+resource "azurerm_container_registry" "acr" {
+  name                = var.acr_name
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  sku                 = "Basic"
+  admin_enabled       = true
+}
+
+# Clúster de Kubernetes (AKS)
+resource "azurerm_kubernetes_cluster" "aks" {
+  name                = var.cluster_name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  dns_prefix          = "techwave"
+
+  default_node_pool {
+    name       = "default"
+    node_count = var.node_count
+    vm_size    = "Standard_B2s"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  network_profile {
+    network_plugin = "azure"
+  }
+}
+
+# Permitir al AKS usar el ACR
+resource "azurerm_role_assignment" "aks_acr" {
+  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+  role_definition_name = "AcrPull"
+  scope                = azurerm_container_registry.acr.id
+}
+
+output "kubeconfig" {
+  value     = azurerm_kubernetes_cluster.aks.kube_config_raw
+  sensitive = true
+}
