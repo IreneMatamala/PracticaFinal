@@ -48,7 +48,7 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
     network_policy = "azure"
     service_cidr   = "10.2.0.0/16"
     dns_service_ip = "10.2.0.10"
-    docker_bridge_cidr = "172.17.0.1/16"
+    
   }
 }
 
@@ -57,4 +57,5 @@ resource "azurerm_role_assignment" "aks_acr" {
   role_definition_name = "AcrPull"
   principal_id         = azurerm_kubernetes_cluster.aks_cluster.kubelet_identity[0].object_id
 }
+
 
