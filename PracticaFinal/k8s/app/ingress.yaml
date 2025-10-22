@@ -1,20 +1,17 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: v1
+kind: Service
 metadata:
-  name: web-ingress
-  namespace: default
-  annotations:
-    kubernetes.io/ingress.class: nginx
+  name: ingress-nginx
+  namespace: ingress-nginx
 spec:
-  rules:
-    - host: "" 
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: web-frontend-svc
-                port:
-                  number: 80
-
+  type: LoadBalancer
+  loadBalancerIP: 20.160.41.120   # <-- la IP que acabas de crear
+  selector:
+    app.kubernetes.io/name: ingress-nginx
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
