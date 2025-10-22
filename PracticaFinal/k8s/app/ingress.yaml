@@ -3,9 +3,11 @@ kind: Service
 metadata:
   name: ingress-nginx
   namespace: ingress-nginx
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-sku: "Standard"
 spec:
   type: LoadBalancer
-  loadBalancerIP: 20.160.41.120   # <-- la IP que acabas de crear
+  loadBalancerIP: 20.160.41.120
   selector:
     app.kubernetes.io/name: ingress-nginx
   ports:
@@ -15,3 +17,4 @@ spec:
     - name: https
       port: 443
       targetPort: 443
+
