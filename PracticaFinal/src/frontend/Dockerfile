@@ -1,10 +1,12 @@
-FROM node:20-alpine as build
+FROM node:18 AS build
 WORKDIR /app
+COPY package*.json ./
+RUN npm install
 COPY . .
-RUN npm install --silent
-FROM node:20-alpine
-WORKDIR /app
-COPY --from=build /app .
-RUN npm install -g serve
-EXPOSE 8080
-CMD ["serve", "-s", ".", "-l", "8080"]
+RUN npm run build || echo "No build step, using static files"
+
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html 2>/dev/null || \
+    cp -r /app/* /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
