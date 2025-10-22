@@ -6,7 +6,7 @@ COPY . .
 RUN npm run build || echo "No build step, using static files"
 
 FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html 2>/dev/null || \
-    cp -r /app/* /usr/share/nginx/html
+WORKDIR /usr/share/nginx/html
+COPY . .
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
