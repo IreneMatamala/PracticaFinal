@@ -4,6 +4,7 @@ metadata:
   name: ingress-nginx
   namespace: ingress-nginx
   annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "false"
     service.beta.kubernetes.io/azure-load-balancer-sku: "Standard"
 spec:
   type: LoadBalancer
@@ -17,4 +18,3 @@ spec:
     - name: https
       port: 443
       targetPort: 443
-
