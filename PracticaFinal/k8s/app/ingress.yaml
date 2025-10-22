@@ -8,13 +8,15 @@ metadata:
     service.beta.kubernetes.io/azure-load-balancer-sku: "Standard"
 spec:
   type: LoadBalancer
-  loadBalancerIP: 20.160.41.120
+  loadBalancerIP: "108.141.111.214"  # Usa esta IP que ya tienes
   selector:
     app.kubernetes.io/name: ingress-nginx
   ports:
     - name: http
       port: 80
       targetPort: 80
+      protocol: TCP
     - name: https
       port: 443
       targetPort: 443
+      protocol: TCP
