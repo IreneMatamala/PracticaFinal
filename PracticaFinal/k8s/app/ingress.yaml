@@ -1,23 +1,35 @@
+# frontend-service-nodeport.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-frontend-svc
+  namespace: default
+spec:
+  selector:
+    app: web
+    tier: frontend
+  type: NodePort
+  ports:
+    - port: 80        
+      targetPort: 80 
+      nodePort: 30080 
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: web-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: nginx
 spec:
-  ingressClassName: nginx   
   rules:
-    - http:
+    - host: "" 
+      http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
                 name: web-frontend-svc
-                port:
-                  number: 80
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: web-backend-svc
                 port:
                   number: 80
