@@ -1,7 +1,18 @@
-#!/usr/bin/env bash
-kubectl apply -f k8s/monitoring/namespace.yaml
-kubectl apply -f k8s/monitoring/prometheus.yaml
-kubectl apply -f k8s/monitoring/grafana.yaml
-kubectl apply -f k8s/monitoring/loki.yaml
-kubectl apply -f k8s/monitoring/open-telemetry.yaml
-echo "Monitoring deployed (simplificado). Recomendado usar Helm charts en producción."
+#!/bin/bash
+
+echo "🔍 Instalando monitorización..."
+
+
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --create-namespace
+
+echo "⏳ Esperando 1 minuto..."
+sleep 60
+
+
+kubectl get pods -n monitoring
+
+
+echo "📊 URLs de Monitorización:"
+kubectl get svc -n monitoring | grep -E "(prometheus|grafana)"
