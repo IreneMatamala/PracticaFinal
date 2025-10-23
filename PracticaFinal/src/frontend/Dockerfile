@@ -1,12 +1,4 @@
-FROM node:18 AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build || echo "No build step, using static files"
-
 FROM nginx:alpine
-WORKDIR /usr/share/nginx/html
-COPY . .
+COPY index.html /usr/share/nginx/html/index.html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
