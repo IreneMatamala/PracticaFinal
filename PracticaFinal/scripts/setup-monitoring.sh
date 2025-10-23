@@ -11,8 +11,9 @@ echo "⏳ Esperando 1 minuto..."
 sleep 60
 
 
+echo "✅ Monitorización ya instalada"
+echo "📊 Pods en monitoring:"
 kubectl get pods -n monitoring
-
-
-echo "📊 URLs de Monitorización:"
+echo ""
+echo "🌐 URLs:"
 kubectl get svc -n monitoring | grep -E "(prometheus|grafana)"
