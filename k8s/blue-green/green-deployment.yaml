@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-green
+  labels:
+    app: web
+    version: green
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web
+      version: green
+  template:
+    metadata:
+      labels:
+        app: web
+        version: green
+    spec:
+      containers:
+        - name: backend
+          image: [REPLACE_ME_REGISTRY]/backend:green
+          ports:
+            - containerPort: 5000
