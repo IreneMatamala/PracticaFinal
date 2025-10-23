@@ -1,7 +1,5 @@
 #!/bin/bash
-
 echo "🔍 Instalando monitorización..."
-
 helm install monitoring prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
   --create-namespace
@@ -15,3 +13,4 @@ kubectl get pods -n monitoring
 echo ""
 echo "🌐 URLs:"
 kubectl get svc -n monitoring | grep -E "(prometheus|grafana)"
+
