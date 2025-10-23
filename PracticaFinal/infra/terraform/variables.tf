@@ -28,12 +28,13 @@ variable "subnet_name" {
 }
 
 variable "node_count" {
-  default = 1
+  default = 2
 }
 
 variable "node_vm_size" {
-  default = "Standard_B1s"
+  default = "Standard D2s v3"
 }
+
 
 
 
