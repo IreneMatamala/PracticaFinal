@@ -6,8 +6,7 @@ echo "1. APLICANDO RECURSOS KUBERNETES..."
 kubectl apply -f k8s/app/namespace.yaml
 kubectl apply -f k8s/app/backend-deployment.yaml
 kubectl apply -f k8s/app/frontend-deployment.yaml
-kubectl apply -f k8s/app/backend-service.yaml
-kubectl apply -f k8s/app/frontend-service.yaml
+kubectl apply -f k8s/app/service.yaml
 kubectl apply -f k8s/app/web-ingress.yaml
 
 echo ""
