@@ -1,33 +1,30 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: web-backend-svc
-  namespace: default
+  name: backend-service
+  namespace: techwave-app
 spec:
   selector:
-    app: web
-    tier: backend
+    app: backend
   ports:
     - protocol: TCP
-      port: 80
+      port: 5000
       targetPort: 5000
   type: ClusterIP
 
-apiVersion: v1
-kind: Service
+
 metadata:
-  name: web-frontend-svc
-  namespace: default
+  name: frontend-service
+  namespace: techwave-app
 spec:
   selector:
-    app: web
-    tier: frontend
-  type: NodePort
+    app: frontend
   ports:
-    - port: 80        
-      targetPort: 80 
-      nodePort: 30081 
----
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+
 
 
 
