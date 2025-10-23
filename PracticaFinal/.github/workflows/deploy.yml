@@ -1,68 +1,28 @@
-name: CI-CD Pipeline
-
+name: Deploy to AKS
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-
-    env:
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-      AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }}
-      AKS_CLUSTER_NAME: ${{ secrets.AKS_CLUSTER_NAME }}
-      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-
+    
     steps:
-   
-    - name: Checkout repository
-      uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
 
- 
-    - name: Log in to GitHub Container Registry
-      run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+    - name: Setup Kubernetes
+      uses: azure/setup-kubectl@v3
 
-  
-    - name: Build backend Docker image
-      run: |
-        cd src/backend
-        docker build -t ghcr.io/${{ github.repository_owner }}/backend:latest .
-
-  
-    - name: Push backend image
-      run: |
-        docker push ghcr.io/${{ github.repository_owner }}/backend:latest
-
- 
-    - name: Build frontend Docker image
-      run: |
-        cd src/frontend
-        docker build -t ghcr.io/${{ github.repository_owner }}/frontend:latest .
-
-    
-    - name: Push frontend image
-      run: |
-        docker push ghcr.io/${{ github.repository_owner }}/frontend:latest
-
-    
-    - name: Login to Azure
-      uses: azure/login@v1
+    - name: Connect to AKS
+      uses: azure/aks-set-context@v3
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        resource-group: techwave-rg
+        cluster-name: techwave-aks
 
-   
-    - name: Get AKS credentials
-      run: az aks get-credentials --resource-group $AKS_RESOURCE_GROUP --name $AKS_CLUSTER_NAME
-
-   
-    - name: Deploy to AKS
+    - name: Deploy to Kubernetes
       run: |
-        kubectl apply -f k8s/app/deployment.yaml
-        kubectl apply -f k8s/app/service.yaml
-        kubectl apply -f k8s/app/ingress.yaml
-
-   
-    - name: Check pods status
-      run: kubectl get po
+        kubectl apply -f k8s/app/
+        kubectl rollout status deployment/frontend-deployment -n techwave-app
+        kubectl rollout status deployment/backend-deployment -n techwave-app
