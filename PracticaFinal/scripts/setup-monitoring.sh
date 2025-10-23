@@ -13,4 +13,3 @@ kubectl get pods -n monitoring
 echo ""
 echo "🌐 URLs:"
 kubectl get svc -n monitoring | grep -E "(prometheus|grafana)"
-
