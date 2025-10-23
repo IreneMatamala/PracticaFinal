@@ -2,7 +2,6 @@
 
 echo "🔍 Instalando monitorización..."
 
-
 helm install monitoring prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
   --create-namespace
@@ -10,8 +9,7 @@ helm install monitoring prometheus-community/kube-prometheus-stack \
 echo "⏳ Esperando 1 minuto..."
 sleep 60
 
-
-echo "✅ Monitorización ya instalada"
+echo "✅ Monitorización instalada"
 echo "📊 Pods en monitoring:"
 kubectl get pods -n monitoring
 echo ""
