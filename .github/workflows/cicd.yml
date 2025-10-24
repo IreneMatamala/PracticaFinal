@@ -3,11 +3,25 @@ name: Deploy to AKS
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  test:
     runs-on: ubuntu-latest
-    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run tests
+      run: |
+        echo "Running application tests..."
+        cd src/backend
+        pip install -r requirements.txt
+        python test_app.py
+
+  deploy-app:
+    needs: test
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -26,44 +40,68 @@ jobs:
         resource-group: techwave-rg
         cluster-name: techwave-aks
 
-    - name: Run tests
+    - name: Deploy Application
       run: |
-        echo "Running tests..."
-        cd src/backend
-        pip install -r requirements.txt
-        python test_app.py
-
-    - name: Build Docker images
-      run: |
-        echo "Building Docker images..."
-        docker build -t myregistry/backend:$GITHUB_SHA ./src/backend
-        docker build -t myregistry/frontend:$GITHUB_SHA ./src/frontend
-
-    - name: Deploy to Kubernetes
-      run: |
-        echo "Deploying application..."
+        echo "Deploying TechWave application..."
         kubectl apply -f k8s/app/ -n techwave-app
         
-        echo "Waiting for deployment..."
-        sleep 30
+        echo "Waiting for application to be ready..."
+        kubectl rollout status deployment/frontend-deployment -n techwave-app --timeout=300s
+        kubectl rollout status deployment/backend-deployment -n techwave-app --timeout=300s
         
-        echo "Checking pods:"
-        kubectl get pods -n techwave-app
+        echo "Application deployed successfully!"
+        kubectl get all -n techwave-app
 
-    - name: Test deployment
+    - name: Test Application
       run: |
-        echo "Testing if app works..."
+        echo "Testing application..."
         kubectl port-forward -n techwave-app service/frontend-service 8080:80 &
         sleep 10
-        curl http://localhost:8080/ || echo "Frontend test failed"
+        curl -f http://localhost:8080/ || echo "Frontend test failed"
         
         kubectl port-forward -n techwave-app service/backend-service 5000:5000 &
         sleep 5
-        curl http://localhost:5000/health || echo "Backend test failed"
+        curl -f http://localhost:5000/health || echo "Backend test failed"
 
-    - name: Rollback if failed
-      if: failure()
+  setup-monitoring:
+    needs: deploy-app
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Kubernetes
+      uses: azure/setup-kubectl@v3
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Connect to AKS
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: techwave-rg
+        cluster-name: techwave-aks
+
+    - name: Install Monitoring Stack
       run: |
-        echo "Something failed, doing rollback..."
-        kubectl rollout undo deployment/frontend-deployment -n techwave-app
-        kubectl rollout undo deployment/backend-deployment -n techwave-app
+        echo "Setting up monitoring..."
+        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+        helm repo update
+        
+        helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+          --namespace monitoring \
+          --create-namespace \
+          --wait
+        
+        echo "Monitoring stack installed!"
+        kubectl get pods -n monitoring
+
+    - name: Apply Custom Monitoring Config
+      run: |
+        echo "Applying custom dashboards and alerts..."
+        kubectl apply -f alerts-Monitoring/ -n monitoring
+        
+        echo "Custom monitoring configuration applied!"
+        kubectl get configmaps -n monitoring | grep -E "(grafana|prometheus)"
