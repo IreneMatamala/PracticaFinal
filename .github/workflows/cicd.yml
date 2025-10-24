@@ -3,34 +3,67 @@ name: Deploy to AKS
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
-    - name: 📥 Checkout code
+    - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: 🏗️ Setup Kubernetes
+    - name: Setup Kubernetes
       uses: azure/setup-kubectl@v3
 
-    - name: 🔐 Azure Login
+    - name: Login to Azure
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: 📡 AKS Connection
+    - name: Connect to AKS
       uses: azure/aks-set-context@v3
       with:
         resource-group: techwave-rg
         cluster-name: techwave-aks
 
-    - name: Deploy to AKS
+    - name: Run tests
       run: |
-        echo "Deploying to AKS..."
-        kubectl get nodes
+        echo "Running tests..."
+        cd src/backend
+        pip install -r requirements.txt
+        python test_app.py
+
+    - name: Build Docker images
+      run: |
+        echo "Building Docker images..."
+        docker build -t myregistry/backend:$GITHUB_SHA ./src/backend
+        docker build -t myregistry/frontend:$GITHUB_SHA ./src/frontend
+
+    - name: Deploy to Kubernetes
+      run: |
+        echo "Deploying application..."
         kubectl apply -f k8s/app/ -n techwave-app
+        
+        echo "Waiting for deployment..."
+        sleep 30
+        
+        echo "Checking pods:"
         kubectl get pods -n techwave-app
-        kubectl get ingress --all-namespaces 
+
+    - name: Test deployment
+      run: |
+        echo "Testing if app works..."
+        kubectl port-forward -n techwave-app service/frontend-service 8080:80 &
+        sleep 10
+        curl http://localhost:8080/ || echo "Frontend test failed"
+        
+        kubectl port-forward -n techwave-app service/backend-service 5000:5000 &
+        sleep 5
+        curl http://localhost:5000/health || echo "Backend test failed"
+
+    - name: Rollback if failed
+      if: failure()
+      run: |
+        echo "Something failed, doing rollback..."
+        kubectl rollout undo deployment/frontend-deployment -n techwave-app
+        kubectl rollout undo deployment/backend-deployment -n techwave-app
