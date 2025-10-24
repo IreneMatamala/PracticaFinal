@@ -1,13 +1,3 @@
 # PracticaFinal
-# Manual de Instalación - TechWave Solutions
-.
-## Prerrequisitos
-- Azure CLI
-- kubectl
-- Helm
-
-## Pasos de instalación:
-1. az login
-2. ./scripts/setup-ingress.sh
-3. kubectl apply -f k8s/app/
-4. Verificar: kubectl get all -n techwave-app
+Para proceder a la instalación ve a la carpeta TechWave-Deployment y lee el readme.md
+Espero que disfrutes de esta app.
