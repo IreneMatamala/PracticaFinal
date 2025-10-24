@@ -27,9 +27,11 @@ jobs:
         resource-group: techwave-rg
         cluster-name: techwave-aks
 
-    - name: 🚀 Deploy App
+    - name: Deploy to AKS
       run: |
         echo "Deploying to AKS..."
         kubectl get nodes
+        kubectl delete ingress techwave-ingress -n techwave-app --ignore-not-found=true
         kubectl apply -f k8s/app/ -n techwave-app
         kubectl get pods -n techwave-app
+        kubectl get ingress -n techwave-app
