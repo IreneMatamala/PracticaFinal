@@ -1,0 +1,35 @@
+name: Deploy to AKS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🏗️ Setup Kubernetes
+      uses: azure/setup-kubectl@v3
+
+    - name: 🔐 Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: 📡 AKS Connection
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: techwave-rg
+        cluster-name: techwave-aks
+
+    - name: 🚀 Deploy App
+      run: |
+        echo "Deploying to AKS..."
+        kubectl get nodes
+        kubectl apply -f k8s/app/ -n techwave-app
+        kubectl get pods -n techwave-app
