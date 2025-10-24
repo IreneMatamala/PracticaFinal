@@ -6,7 +6,6 @@ on:
 jobs:
   blue-green:
     runs-on: ubuntu-latest
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -26,26 +25,37 @@ jobs:
         cluster-name: techwave-aks
 
     - name: Check current version
+      id: detect
       run: |
         CURRENT=$(kubectl get service frontend-service -n techwave-app -o jsonpath='{.spec.selector.version}' || echo "blue")
-        echo "Current version is: $CURRENT"
+        echo "current_version=$CURRENT" >> $GITHUB_OUTPUT
         
         if [ "$CURRENT" == "blue" ]; then
-          echo "NEW_VERSION=green" >> $GITHUB_ENV
+          echo "new_version=green" >> $GITHUB_OUTPUT
+          echo "🎯 Current: BLUE, Deploying: GREEN"
         else
-          echo "NEW_VERSION=blue" >> $GITHUB_ENV
+          echo "new_version=blue" >> $GITHUB_OUTPUT
+          echo "🎯 Current: GREEN, Deploying: BLUE"
         fi
 
     - name: Deploy new version
       run: |
-        echo "Deploying $NEW_VERSION version"
-        kubectl apply -f k8s/blue-green/$NEW_VERSION-deployment.yaml -n techwave-app
+        echo "Deploying ${{ steps.detect.outputs.new_version }} version"
+        kubectl apply -f k8s/blue-green/${{ steps.detect.outputs.new_version }}-deployment.yaml -n techwave-app
         
         echo "Waiting for new version to be ready..."
-        kubectl rollout status deployment/frontend-$NEW_VERSION -n techwave-app --timeout=180s
+        kubectl rollout status deployment/frontend-${{ steps.detect.outputs.new_version }} -n techwave-app --timeout=180s
 
     - name: Switch traffic
       run: |
-        echo "Switching traffic to $NEW_VERSION"
-        kubectl patch service frontend-service -n techwave-app -p "{\"spec\":{\"selector\":{\"version\":\"$NEW_VERSION\"}}}"
-        echo "Done! Now using $NEW_VERSION version"
+        echo "Switching traffic to ${{ steps.detect.outputs.new_version }}"
+        kubectl patch service frontend-service -n techwave-app -p "{\"spec\":{\"selector\":{\"version\":\"${{ steps.detect.outputs.new_version }}\"}}}"
+        echo "Done! Now using ${{ steps.detect.outputs.new_version }} version"
+
+    - name: Rollback if failed
+      if: failure()
+      run: |
+        echo "Deployment failed, rolling back..."
+        kubectl rollout undo deployment/frontend-${{ steps.detect.outputs.new_version }} -n techwave-app
+        kubectl patch service frontend-service -n techwave-app -p "{\"spec\":{\"selector\":{\"version\":\"${{ steps.detect.outputs.current_version }}\"}}}"
+        echo "Rollback completed to ${{ steps.detect.outputs.current_version }} version"
