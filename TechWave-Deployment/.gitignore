@@ -1,0 +1,29 @@
+# Configuraciones de clientes
+config.yaml
+config-*.yaml
+!config-cliente.yaml
+!examples/
+
+# Secrets y datos sensibles
+.env
+*.secret
+*.key
+*.pem
+*.crt
+
+# Logs
+*.log
+deployment-*.log
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+
+# Temporales
+tmp/
+temp/
