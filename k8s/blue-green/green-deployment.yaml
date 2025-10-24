@@ -1,24 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: web-green
-  labels:
-    app: web
-    version: green
+  name: frontend-green
+  namespace: techwave-app
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: web
+      app: frontend
       version: green
   template:
     metadata:
       labels:
-        app: web
+        app: frontend
         version: green
     spec:
       containers:
-        - name: backend
-          image: [REPLACE_ME_REGISTRY]/backend:green
-          ports:
-            - containerPort: 5000
+      - name: frontend
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
