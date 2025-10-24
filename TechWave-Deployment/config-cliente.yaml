@@ -1,0 +1,40 @@
+# CONFIGURACIÓN TECHWAVE SOLUTIONS - TEMPLATE
+# Copie este archivo como config.yaml
+
+# Cambie los valores nombre, contacto, dominio, suscription_id
+empresa:
+  nombre: "NOMBRE_SU_EMPRESA"           
+  contacto: "email@empresa.com"         
+  dominio: "app.suempresa.com"          
+
+
+azure:
+  subscription_id: "SUBSCRIPTION_ID"    
+  region: "West Europe"                
+
+
+recursos:
+  cluster_name: "techwave-aks"          
+  resource_group: "rg-techwave"         
+  acr_name: "techwaveacr"               
+
+
+cluster:
+  node_count: 2                        
+  vm_size: "Standard_B2s"               
+  auto_scaling: true                    
+
+
+features:
+  monitoring: true                      
+  backup: true                          
+  ssl: false                            
+  cdn: false                            
+
+
+app:
+  environment: "production"             
+  replicas: 2                           
+  resource_limits:                      
+    cpu: "500m"
+    memory: "512Mi"
