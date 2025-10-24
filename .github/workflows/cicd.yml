@@ -105,7 +105,7 @@ jobs:
     
         kubectl apply -f k8s/monitoring/loki.yaml -n monitoring
         kubectl apply -f k8s/monitoring/open-telemetry.yaml -n monitoring
-        kubectl apply -f k8s/monitoring/service.yaml -n monitoring
+       
         
         echo "Additional components deployed:"
         kubectl get all -n monitoring | grep -v "prometheus\|grafana"
