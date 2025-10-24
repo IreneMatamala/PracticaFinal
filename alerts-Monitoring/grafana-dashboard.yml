@@ -1,19 +1,19 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: grafana-dashboard
+  name: techwave-dashboard
   namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
 data:
-  dashboard.json: |
+  techwave-dashboard.json: |
     {
-      "dashboard": {
-        "title": "TechWave App Dashboard",
-        "panels": [
-          {
-            "title": "Pods Running",
-            "type": "stat",
-            "targets": [{"expr": "count(kube_pod_info)"}]
-          }
-        ]
-      }
+      "title": "TechWave App",
+      "panels": [
+        {
+          "title": "Pods Running",
+          "type": "stat",
+          "targets": [{"expr": "count(kube_pod_info)"}]
+        }
+      ]
     }
