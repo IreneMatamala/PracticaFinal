@@ -90,22 +90,33 @@ jobs:
         helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
         helm repo update
         
-        helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+        # Clean installation approach
+        helm uninstall monitoring -n monitoring 2>/dev/null || echo "No previous release to uninstall"
+        sleep 15
+        
+        helm install monitoring prometheus-community/kube-prometheus-stack \
           --namespace monitoring \
           --create-namespace \
-          --wait
+          --wait \
+          --timeout 10m
         
-        echo "Monitoring stack installed!"
+        echo "Monitoring stack installed successfully!"
         kubectl get pods -n monitoring
 
-   
     - name: Apply Additional Monitoring Components
       run: |
         echo "Applying additional monitoring components..."
-    
+        
         kubectl apply -f k8s/monitoring/loki.yaml -n monitoring
         kubectl apply -f k8s/monitoring/open-telemetry.yaml -n monitoring
-       
         
         echo "Additional components deployed:"
-        kubectl get all -n monitoring | grep -v "prometheus\|grafana"
+        kubectl get pods -n monitoring | grep -E "(loki|otel)"
+
+    - name: Apply Custom Dashboards and Alerts
+      run: |
+        echo "Applying custom dashboards and alerts..."
+        kubectl apply -f alerts-Monitoring/ -n monitoring
+        
+        echo "Custom monitoring configuration applied!"
+        kubectl get configmaps -n monitoring | grep -E "(grafana|prometheus)"
