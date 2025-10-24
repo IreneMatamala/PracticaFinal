@@ -1,0 +1,51 @@
+name: Blue-Green Deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  blue-green:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Kubernetes
+      uses: azure/setup-kubectl@v3
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Connect to AKS
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: techwave-rg
+        cluster-name: techwave-aks
+
+    - name: Check current version
+      run: |
+        CURRENT=$(kubectl get service frontend-service -n techwave-app -o jsonpath='{.spec.selector.version}' || echo "blue")
+        echo "Current version is: $CURRENT"
+        
+        if [ "$CURRENT" == "blue" ]; then
+          echo "NEW_VERSION=green" >> $GITHUB_ENV
+        else
+          echo "NEW_VERSION=blue" >> $GITHUB_ENV
+        fi
+
+    - name: Deploy new version
+      run: |
+        echo "Deploying $NEW_VERSION version"
+        kubectl apply -f k8s/blue-green/$NEW_VERSION-deployment.yaml -n techwave-app
+        
+        echo "Waiting for new version to be ready..."
+        kubectl rollout status deployment/frontend-$NEW_VERSION -n techwave-app --timeout=180s
+
+    - name: Switch traffic
+      run: |
+        echo "Switching traffic to $NEW_VERSION"
+        kubectl patch service frontend-service -n techwave-app -p "{\"spec\":{\"selector\":{\"version\":\"$NEW_VERSION\"}}}"
+        echo "Done! Now using $NEW_VERSION version"
