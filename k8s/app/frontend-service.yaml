@@ -3,14 +3,13 @@ kind: Service
 metadata:
   name: frontend-service
   namespace: techwave-app
-  annotations:
-    service.beta.kubernetes.io/azure-load-balancer-resource-group: MC_techwave-rg_techwave-aks_westeurope
 spec:
   selector:
     app: frontend
+    version: blue  
   ports:
   - port: 80
-    targetPort: 3000
-  type: LoadBalancer 
+    targetPort: 80
+  type: ClusterIP
 
 
