@@ -98,10 +98,14 @@ jobs:
         echo "Monitoring stack installed!"
         kubectl get pods -n monitoring
 
-    - name: Apply Custom Monitoring Config
+   
+    - name: Apply Additional Monitoring Components
       run: |
-        echo "Applying custom dashboards and alerts..."
-        kubectl apply -f alerts-Monitoring/ -n monitoring
+        echo "Applying additional monitoring components..."
+    
+        kubectl apply -f k8s/monitoring/loki.yaml -n monitoring
+        kubectl apply -f k8s/monitoring/open-telemetry.yaml -n monitoring
+        kubectl apply -f k8s/monitoring/service.yaml -n monitoring
         
-        echo "Custom monitoring configuration applied!"
-        kubectl get configmaps -n monitoring | grep -E "(grafana|prometheus)"
+        echo "Additional components deployed:"
+        kubectl get all -n monitoring | grep -v "prometheus\|grafana"
