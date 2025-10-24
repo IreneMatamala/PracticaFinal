@@ -1,6 +1,6 @@
 # PracticaFinal
 # Manual de Instalación - TechWave Solutions
-
+.
 ## Prerrequisitos
 - Azure CLI
 - kubectl
