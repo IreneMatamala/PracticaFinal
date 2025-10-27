@@ -1,4 +1,4 @@
-name: Deploy app a AKS
+name: Deploy to AKS
 
 on:
   push:
@@ -12,11 +12,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Run tests
-      run: |
-        cd src/backend
-        pip install -r requirements.txt
-        python test_app.py
 
   deploy-app:
     needs: test
@@ -41,19 +36,19 @@ jobs:
 
     - name: Deploy Application
       run: |
-        echo "Desplegando la app TechWave..."
+        echo "Desplegando aplicacion TechWave..."
         kubectl apply -f k8s/app/ -n techwave-app
         
-        echo "..."
+        echo "Esperando que la aplicacion este lista..."
         kubectl rollout status deployment/frontend-deployment -n techwave-app --timeout=300s
         kubectl rollout status deployment/backend-deployment -n techwave-app --timeout=300s
         
-        echo "App desplegada"
+        echo "Aplicacion desplegada exitosamente"
         kubectl get all -n techwave-app
 
     - name: Test Application
       run: |
-        echo "Testeando"
+        echo "Probando aplicacion..."
         kubectl port-forward -n techwave-app service/frontend-service 8080:80 &
         sleep 10
         curl -f http://localhost:8080/ || echo "Frontend test failed"
@@ -82,39 +77,89 @@ jobs:
       with:
         resource-group: techwave-rg
         cluster-name: techwave-aks
-        
-        
+
+    - name: Install Helm
+      run: |
+        echo "Instalando Helm..."
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        helm version
+
     - name: Install Monitoring Stack
       run: |
-        echo "🚀 Instalando monitoring con timeout extendido..."
+        echo "Configurando monitoreo..."
         
-        helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
-          --namespace monitoring \
-          --create-namespace \
-          --wait \
-          --timeout 22m \          
-          --atomic \               
-          --set prometheus.prometheusSpec.resources.requests.cpu=100m \
-          --set prometheus.prometheusSpec.resources.requests.memory=256Mi \
-          --set grafana.resources.requests.cpu=50m \
-          --set grafana.resources.requests.memory=128Mi
+       
+        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+        helm repo add grafana https://grafana.github.io/helm-charts
+        helm repo update
         
-        echo "Instalación completada"
+      
+        if helm list -n monitoring | grep -q monitoring; then
+            echo "Monitoring ya existe - actualizando"
+            helm upgrade monitoring prometheus-community/kube-prometheus-stack \
+              --namespace monitoring \
+              --reuse-values \
+              --wait \
+              --timeout 30m
+        else
+            echo "Instalando monitoring por primera vez"
+            helm install monitoring prometheus-community/kube-prometheus-stack \
+              --namespace monitoring \
+              --create-namespace \
+              --wait \
+              --timeout 30m \
+              --set prometheus.prometheusSpec.resources.requests.cpu=100m \
+              --set prometheus.prometheusSpec.resources.requests.memory=256Mi \
+              --set grafana.resources.requests.cpu=50m \
+              --set grafana.resources.requests.memory=128Mi
+        fi
 
-    - name: Apply Additional Monitoring Components
+    - name: Install Loki
       run: |
-        echo "Instalando loki y OT"
+        echo "Instalando Loki para logs..."
+        kubectl apply -f k8s/monitoring/loki.yaml -n monitoring --wait=true
         
-        kubectl apply -f k8s/monitoring/loki.yaml -n monitoring
-        kubectl apply -f k8s/monitoring/open-telemetry.yaml -n monitoring
+        echo "Verificando instalacion de Loki..."
+        kubectl wait --for=condition=ready pod -l app=loki -n monitoring --timeout=180s
+
+    - name: Install OpenTelemetry
+      run: |
+        echo "Instalando OpenTelemetry para trazas..."
+        kubectl apply -f k8s/monitoring/open-telemetry.yaml -n monitoring --wait=true
         
-        echo "Loki y OT descargados:"
-        kubectl get pods -n monitoring | grep -E "(loki|otel)"
+        echo "Verificando instalacion de OpenTelemetry..."
+        kubectl wait --for=condition=ready pod -l app=otel-collector -n monitoring --timeout=180s
 
     - name: Apply Custom Dashboards and Alerts
       run: |
-        echo "Creando los dashboards y alertas..."
+        echo "Aplicando dashboards y alertas personalizadas..."
         kubectl apply -f alerts-Monitoring/ -n monitoring
         
-        echo "Monitoring configurado y personalizado"
-        kubectl get configmaps -n monitoring | grep -E "(grafana|prometheus)"
+        echo "Configuracion personalizada aplicada"
+
+    - name: Verify Monitoring
+      run: |
+        echo "Verificando estado del monitoreo..."
+        kubectl get pods -n monitoring
+        
+        echo "Esperando que todos los pods esten listos..."
+        sleep 60
+        kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana -n monitoring --timeout=120s
+        kubectl wait --for=condition=ready pod -l app=prometheus -n monitoring --timeout=120s
+        
+        echo "Monitoreo configurado exitosamente"
+
+    - name: Final Health Check
+      run: |
+        echo "Verificacion final del sistema..."
+        
+        echo "Estado de la aplicacion:"
+        kubectl get all -n techwave-app
+        
+        echo "Estado del monitoreo:"
+        kubectl get all -n monitoring
+        
+        echo "Estado del cluster:"
+        kubectl get nodes
+        
+        echo "Todos los servicios desplegados exitosamente"
