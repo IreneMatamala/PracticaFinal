@@ -1,4 +1,4 @@
-name: Deploy to AKS
+name: Deploy app a AKS
 
 on:
   push:
@@ -14,7 +14,6 @@ jobs:
 
     - name: Run tests
       run: |
-        echo "Running application tests..."
         cd src/backend
         pip install -r requirements.txt
         python test_app.py
@@ -42,19 +41,19 @@ jobs:
 
     - name: Deploy Application
       run: |
-        echo "Deploying TechWave application..."
+        echo "Desplegando la app TechWave..."
         kubectl apply -f k8s/app/ -n techwave-app
         
-        echo "Waiting for application to be ready..."
+        echo "..."
         kubectl rollout status deployment/frontend-deployment -n techwave-app --timeout=300s
         kubectl rollout status deployment/backend-deployment -n techwave-app --timeout=300s
         
-        echo "Application deployed successfully!"
+        echo "App desplegada"
         kubectl get all -n techwave-app
 
     - name: Test Application
       run: |
-        echo "Testing application..."
+        echo "Testeando"
         kubectl port-forward -n techwave-app service/frontend-service 8080:80 &
         sleep 10
         curl -f http://localhost:8080/ || echo "Frontend test failed"
@@ -87,61 +86,35 @@ jobs:
         
     - name: Install Monitoring Stack
       run: |
-        echo "🔧 Configurando Helm y repositorios..."
+        echo "🚀 Instalando monitoring con timeout extendido..."
         
-        # 1. Agregar repositorio con URL completa
-        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-        helm repo add grafana https://grafana.github.io/helm-charts
-        
-        # 2. Actualizar repositorios
-        helm repo update
-        
-        # 3. Verificar repositorios
-        helm repo list
-        
-        echo "🚀 Instalando stack de monitoring..."
-        
-        # 4. Instalar con timeout extendido
         helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
           --namespace monitoring \
           --create-namespace \
           --wait \
-          --timeout 20m \
-          --set prometheus.prometheusSpec.resources.requests.memory=512Mi \
-          --set prometheus.prometheusSpec.resources.requests.cpu=200m \
-          --set grafana.resources.requests.memory=256Mi \
-          --set grafana.resources.requests.cpu=100m
+          --timeout 22m \          
+          --atomic \               
+          --set prometheus.prometheusSpec.resources.requests.cpu=100m \
+          --set prometheus.prometheusSpec.resources.requests.memory=256Mi \
+          --set grafana.resources.requests.cpu=50m \
+          --set grafana.resources.requests.memory=128Mi
         
-        echo "✅ Monitoring instalado - Verificando..."
-        
-        # 5. Verificar instalación
-        kubectl get pods -n monitoring -w &
-        sleep 60
-        kubectl get all -n monitoring
-
-    - name: Debug Helm Issues
-      run: |
-        echo "🔍 Diagnóstico de Helm..."
-        helm version
-        helm repo list
-        kubectl cluster-info
-        echo "📊 Recursos del cluster:"
-        kubectl describe nodes
+        echo "Instalación completada"
 
     - name: Apply Additional Monitoring Components
       run: |
-        echo "Applying additional monitoring components..."
+        echo "Instalando loki y OT"
         
         kubectl apply -f k8s/monitoring/loki.yaml -n monitoring
         kubectl apply -f k8s/monitoring/open-telemetry.yaml -n monitoring
         
-        echo "Additional components deployed:"
+        echo "Loki y OT descargados:"
         kubectl get pods -n monitoring | grep -E "(loki|otel)"
 
     - name: Apply Custom Dashboards and Alerts
       run: |
-        echo "Applying custom dashboards and alerts..."
+        echo "Creando los dashboards y alertas..."
         kubectl apply -f alerts-Monitoring/ -n monitoring
         
-        echo "Custom monitoring configuration applied!"
+        echo "Monitoring configurado y personalizado"
         kubectl get configmaps -n monitoring | grep -E "(grafana|prometheus)"
