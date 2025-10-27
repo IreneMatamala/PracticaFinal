@@ -84,21 +84,19 @@ jobs:
         resource-group: techwave-rg
         cluster-name: techwave-aks
 
-    - name: Install Monitoring Stack
+    - name: Install Lightweight Monitoring
       run: |
-        echo "Setting up monitoring..."
-        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-        helm repo update
-        
-        # Clean installation approach
-        helm uninstall monitoring -n monitoring 2>/dev/null || echo "No previous release to uninstall"
-        sleep 15
-        
-        helm install monitoring prometheus-community/kube-prometheus-stack \
-          --namespace monitoring \
-          --create-namespace \
-          --wait \
-          --timeout 10m
+        echo "Instalando versión ligera..."
+    
+        helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+        --namespace monitoring \
+        --create-namespace \
+        --set prometheus.prometheusSpec.resources.requests.memory=512Mi \
+        --set prometheus.prometheusSpec.resources.requests.cpu=200m \
+        --set grafana.resources.requests.memory=256Mi \
+        --set grafana.resources.requests.cpu=100m \
+        --wait \
+        --timeout 15m
         
         echo "Monitoring stack installed successfully!"
         kubectl get pods -n monitoring
