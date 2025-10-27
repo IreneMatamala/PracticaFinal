@@ -83,23 +83,48 @@ jobs:
       with:
         resource-group: techwave-rg
         cluster-name: techwave-aks
-
-    - name: Install Lightweight Monitoring
+    - name: Debug Helm Issues
       run: |
-        echo "Instalando versión ligera..."
-    
-        helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
-        --namespace monitoring \
-        --create-namespace \
-        --set prometheus.prometheusSpec.resources.requests.memory=512Mi \
-        --set prometheus.prometheusSpec.resources.requests.cpu=200m \
-        --set grafana.resources.requests.memory=256Mi \
-        --set grafana.resources.requests.cpu=100m \
-        --wait \
-        --timeout 15m
+        echo "🔍 Diagnóstico de Helm..."
+        helm version
+        helm repo list
+        kubectl cluster-info
+        echo "📊 Recursos del cluster:"
+        kubectl describe nodes
         
-        echo "Monitoring stack installed successfully!"
-        kubectl get pods -n monitoring
+    - name: Install Monitoring Stack
+      run: |
+        echo "🔧 Configurando Helm y repositorios..."
+        
+        # 1. Agregar repositorio con URL completa
+        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+        helm repo add grafana https://grafana.github.io/helm-charts
+        
+        # 2. Actualizar repositorios
+        helm repo update
+        
+        # 3. Verificar repositorios
+        helm repo list
+        
+        echo "🚀 Instalando stack de monitoring..."
+        
+        # 4. Instalar con timeout extendido
+        helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+          --namespace monitoring \
+          --create-namespace \
+          --wait \
+          --timeout 20m \
+          --set prometheus.prometheusSpec.resources.requests.memory=512Mi \
+          --set prometheus.prometheusSpec.resources.requests.cpu=200m \
+          --set grafana.resources.requests.memory=256Mi \
+          --set grafana.resources.requests.cpu=100m
+        
+        echo "✅ Monitoring instalado - Verificando..."
+        
+        # 5. Verificar instalación
+        kubectl get pods -n monitoring -w &
+        sleep 60
+        kubectl get all -n monitoring
 
     - name: Apply Additional Monitoring Components
       run: |
