@@ -83,14 +83,7 @@ jobs:
       with:
         resource-group: techwave-rg
         cluster-name: techwave-aks
-    - name: Debug Helm Issues
-      run: |
-        echo "🔍 Diagnóstico de Helm..."
-        helm version
-        helm repo list
-        kubectl cluster-info
-        echo "📊 Recursos del cluster:"
-        kubectl describe nodes
+        
         
     - name: Install Monitoring Stack
       run: |
@@ -125,6 +118,15 @@ jobs:
         kubectl get pods -n monitoring -w &
         sleep 60
         kubectl get all -n monitoring
+
+    - name: Debug Helm Issues
+      run: |
+        echo "🔍 Diagnóstico de Helm..."
+        helm version
+        helm repo list
+        kubectl cluster-info
+        echo "📊 Recursos del cluster:"
+        kubectl describe nodes
 
     - name: Apply Additional Monitoring Components
       run: |
