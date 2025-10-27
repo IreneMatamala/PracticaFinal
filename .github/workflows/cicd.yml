@@ -88,31 +88,42 @@ jobs:
       run: |
         echo "Configurando monitoreo..."
         
-       
+        # Configurar repositorios de Helm
         helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
         helm repo add grafana https://grafana.github.io/helm-charts
         helm repo update
         
-      
-        if helm list -n monitoring | grep -q monitoring; then
-            echo "Monitoring ya existe - actualizando"
-            helm upgrade monitoring prometheus-community/kube-prometheus-stack \
-              --namespace monitoring \
-              --reuse-values \
-              --wait \
-              --timeout 30m
-        else
-            echo "Instalando monitoring por primera vez"
-            helm install monitoring prometheus-community/kube-prometheus-stack \
-              --namespace monitoring \
-              --create-namespace \
-              --wait \
-              --timeout 30m \
-              --set prometheus.prometheusSpec.resources.requests.cpu=100m \
-              --set prometheus.prometheusSpec.resources.requests.memory=256Mi \
-              --set grafana.resources.requests.cpu=50m \
-              --set grafana.resources.requests.memory=128Mi
+        # Verificar estado real del release
+        echo "Verificando estado de Helm releases..."
+        helm list -A
+        
+        # Limpiar release corrupto si existe
+        if helm list -A | grep -q monitoring; then
+            echo "Limpiando release monitoring existente..."
+            helm uninstall monitoring -n monitoring 2>/dev/null || true
+            sleep 10
         fi
+        
+        # Verificar si hay pods de monitoring (instalacion previa)
+        if kubectl get pods -n monitoring --no-headers 2>/dev/null | grep -q prometheus; then
+            echo "Hay una instalacion previa de monitoring - eliminando..."
+            kubectl delete namespace monitoring 2>/dev/null || true
+            sleep 20
+        fi
+        
+        # Instalar fresh
+        echo "Instalando monitoring desde cero..."
+        helm install monitoring prometheus-community/kube-prometheus-stack \
+          --namespace monitoring \
+          --create-namespace \
+          --wait \
+          --timeout 30m \
+          --set prometheus.prometheusSpec.resources.requests.cpu=100m \
+          --set prometheus.prometheusSpec.resources.requests.memory=256Mi \
+          --set grafana.resources.requests.cpu=50m \
+          --set grafana.resources.requests.memory=128Mi
+        
+        echo "Monitoring instalado exitosamente"
 
     - name: Install Loki
       run: |
