@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  ACR_REGISTRY: techwaveacr.azurecr.io
+  ACR_REGISTRY: techwaveacr123.azurecr.io
   CLUSTER_NAME: techwave-aks
   RESOURCE_GROUP: techwave-rg
 
