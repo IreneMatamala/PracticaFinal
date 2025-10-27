@@ -144,13 +144,20 @@ jobs:
         
         echo "Verificando instalacion de OpenTelemetry..."
         kubectl wait --for=condition=ready pod -l app=otel-collector -n monitoring --timeout=180s
-
-    - name: Apply Custom Dashboards and Alerts
+   
+    - name: Apply Monitoring Config
       run: |
-        echo "Aplicando dashboards y alertas personalizadas..."
-        kubectl apply -f alerts-Monitoring/ -n monitoring
+        echo "Aplicando configuracion de monitoreo..."
         
-        echo "Configuracion personalizada aplicada"
+      
+        kubectl apply -f alerts-Monitoring/grafana-dashboard.yml -n monitoring
+        
+      
+        if [ -f "alerts-Monitoring/prometheus-rules.yml" ]; then
+            kubectl apply -f alerts-Monitoring/prometheus-rules.yml -n monitoring
+        fi
+        
+        echo "Configuracion de monitoreo aplicada"
 
     - name: Verify Monitoring
       run: |
