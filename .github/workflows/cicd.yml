@@ -184,14 +184,12 @@ jobs:
         
         echo "Monitoreo desplegado - verificacion basica completada"
 
-    - name: Verify HPA Working
+    - name: Verify HPA Status
       run: |
-        echo "Esperando métricas..."
-        sleep 60
-        echo "Estado del HPA:"
+        echo "Estado final del HPA:"
         kubectl get hpa -n techwave-app
-        echo "Métricas de nodos:"
-        kubectl top nodes
+        echo "Métricas actuales:"
+        kubectl top pods -n techwave-app
         
     - name: Final Health Check
       run: |
