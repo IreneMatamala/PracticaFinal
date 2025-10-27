@@ -124,14 +124,18 @@ jobs:
           --set grafana.resources.requests.memory=128Mi
         
         echo "Monitoring instalado exitosamente"
-
+    
     - name: Install Loki
       run: |
-        echo "Instalando Loki para logs..."
-        kubectl apply -f k8s/monitoring/loki.yaml -n monitoring --wait=true
+        helm upgrade --install loki grafana/loki-stack \
+          --namespace monitoring \
+          --set loki.persistence.enabled=false \
+          --set promtail.enabled=false \
+          --set grafana.enabled=false \
+          --wait \
+          --timeout 15m
         
-        echo "Verificando instalacion de Loki..."
-        kubectl wait --for=condition=ready pod -l app=loki -n monitoring --timeout=180s
+        echo "Loki instalado via Helm"
 
     - name: Install OpenTelemetry
       run: |
