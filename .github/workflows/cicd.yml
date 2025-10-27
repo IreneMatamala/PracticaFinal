@@ -5,13 +5,17 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  ACR_REGISTRY: techwaveacr.azurecr.io
+  CLUSTER_NAME: techwave-aks
+  RESOURCE_GROUP: techwave-rg
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
 
   deploy-app:
     needs: test
@@ -28,16 +32,27 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    - name: Login to ACR
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.ACR_REGISTRY }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+
     - name: Connect to AKS
       uses: azure/aks-set-context@v3
       with:
-        resource-group: techwave-rg
-        cluster-name: techwave-aks
+        resource-group: ${{ env.RESOURCE_GROUP }}
+        cluster-name: ${{ env.CLUSTER_NAME }}
 
     - name: Deploy Application
       run: |
         echo "Desplegando aplicacion TechWave..."
         kubectl apply -f k8s/app/ -n techwave-app
+        
+        echo "Actualizando imagenes desde ACR..."
+        kubectl set image deployment/frontend-deployment *=${ACR_REGISTRY}/frontend:latest -n techwave-app
+        kubectl set image deployment/backend-deployment *=${ACR_REGISTRY}/backend:latest -n techwave-app
         
         echo "Esperando que la aplicacion este lista..."
         kubectl rollout status deployment/frontend-deployment -n techwave-app --timeout=300s
@@ -72,11 +87,18 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    - name: Login to ACR
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.ACR_REGISTRY }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+
     - name: Connect to AKS
       uses: azure/aks-set-context@v3
       with:
-        resource-group: techwave-rg
-        cluster-name: techwave-aks
+        resource-group: ${{ env.RESOURCE_GROUP }}
+        cluster-name: ${{ env.CLUSTER_NAME }}
 
     - name: Install Helm
       run: |
@@ -93,21 +115,18 @@ jobs:
         helm repo update
         helm list -A
         
-      
         if helm list -A | grep -q monitoring; then
             echo "Limpiando release monitoring existente..."
             helm uninstall monitoring -n monitoring 2>/dev/null || true
             sleep 10
         fi
         
-       
         if kubectl get pods -n monitoring --no-headers 2>/dev/null | grep -q prometheus; then
             echo "Hay una instalacion previa de monitoring - eliminando..."
             kubectl delete namespace monitoring 2>/dev/null || true
             sleep 20
         fi
         
-       
         echo "Instalando monitoring desde cero..."
         helm install monitoring prometheus-community/kube-prometheus-stack \
           --namespace monitoring \
@@ -144,9 +163,8 @@ jobs:
     - name: Apply Monitoring Config
       run: |
         echo "Aplicando configuracion de monitoreo..."
-          kubectl apply -f alerts-Monitoring/grafana-dashboard.yml -n monitoring
+        kubectl apply -f alerts-Monitoring/grafana-dashboard.yml -n monitoring
         
-      
         if [ -f "alerts-Monitoring/prometheus-rules.yml" ]; then
             kubectl apply -f alerts-Monitoring/prometheus-rules.yml -n monitoring
         fi
@@ -161,7 +179,6 @@ jobs:
         echo "Esperando inicializacion..."
         sleep 60
         
-       
         echo "Pods en estado Running:"
         kubectl get pods -n monitoring --field-selector=status.phase=Running --no-headers | wc -l
         
